@@ -1,6 +1,7 @@
 """User management endpoints."""
 from typing import List, Optional
 from datetime import datetime
+from pydantic import BaseModel, EmailStr
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, EmailStr, validator
@@ -27,6 +28,9 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class EmailChangeRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
@@ -297,3 +301,64 @@ async def delete_user(
     db.commit()
     
     return None
+
+@router.put("/me/email", response_model=UserResponse)
+async def change_my_email(
+    request: Request,
+    email_data: EmailChangeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Change current user's email."""
+    from core.security import verify_password
+    
+    # Verify password
+    if not verify_password(email_data.password, current_user.hashed_password):
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action="email_change_failed",
+            resource_type="user",
+            resource_id=str(current_user.id),
+            status="failed",
+            error_message="Invalid password",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent")
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid password"
+        )
+    
+    # Check if email already exists
+    existing_user = db.query(User).filter(
+        User.email == email_data.email,
+        User.id != current_user.id
+    ).first()
+    
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already in use by another account"
+        )
+    
+    # Update email
+    old_email = current_user.email
+    current_user.email = email_data.email
+    db.commit()
+    db.refresh(current_user)
+    
+    # Log action
+    log_action(
+        db=db,
+        user_id=current_user.id,
+        action="email_changed",
+        resource_type="user",
+        resource_id=str(current_user.id),
+        resource_name=current_user.username,
+        details=f"Email changed from {old_email} to {email_data.email}",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return current_user
