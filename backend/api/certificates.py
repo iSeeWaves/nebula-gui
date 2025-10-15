@@ -1,0 +1,387 @@
+"""Certificate management endpoints with validation and logging."""
+import json
+from datetime import datetime, timedelta
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, validator
+from sqlalchemy.orm import Session
+
+from core.database import get_db, User, Certificate
+from core.cert_manager import CertificateManager
+from api.auth import get_current_active_user, get_current_admin_user
+from api.middleware import limiter, validate_certificate_name, validate_ip_cidr
+from core.logger import log_action
+
+router = APIRouter(prefix="/certificates", tags=["certificates"])
+cert_manager = CertificateManager()
+
+
+class CertificateCreate(BaseModel):
+    name: str
+    cert_type: str
+    ip_address: Optional[str] = None
+    groups: Optional[List[str]] = None
+    duration_hours: int = 8760
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not validate_certificate_name(v):
+            raise ValueError('Invalid certificate name. Use only alphanumeric, dots, dashes, and underscores')
+        return v
+    
+    @validator('ip_address')
+    def validate_ip(cls, v):
+        if v and not validate_ip_cidr(v):
+            raise ValueError('Invalid IP/CIDR format. Use format like 192.168.100.1/24')
+        return v
+    
+    @validator('duration_hours')
+    def validate_duration(cls, v):
+        if not 1 <= v <= 87600:
+            raise ValueError('Duration must be between 1 hour and 87600 hours (10 years)')
+        return v
+    
+    @validator('cert_type')
+    def validate_type(cls, v):
+        if v not in ['ca', 'host', 'client']:
+            raise ValueError('Certificate type must be ca, host, or client')
+        return v
+
+
+class CertificateResponse(BaseModel):
+    id: int
+    name: str
+    cert_type: str
+    ip_address: Optional[str]
+    groups: Optional[str]
+    is_ca: bool
+    duration_hours: int
+    created_at: datetime
+    expires_at: datetime
+    revoked: bool
+    
+    class Config:
+        from_attributes = True
+
+
+class CertificateWithKeys(BaseModel):
+    certificate: CertificateResponse
+    public_key: str
+    private_key: Optional[str] = None
+
+
+@router.post("/ca", response_model=CertificateWithKeys, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
+async def create_ca(
+    request: Request,
+    cert_data: CertificateCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Create CA certificate with rate limiting."""
+    existing = db.query(Certificate).filter(Certificate.name == cert_data.name).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Certificate with this name already exists"
+        )
+    
+    try:
+        result = cert_manager.create_ca(
+            name=cert_data.name,
+            duration_hours=cert_data.duration_hours
+        )
+        
+        expires_at = datetime.utcnow() + timedelta(hours=cert_data.duration_hours)
+        
+        db_cert = Certificate(
+            name=cert_data.name,
+            cert_type="ca",
+            is_ca=True,
+            duration_hours=cert_data.duration_hours,
+            public_key=result["cert"],
+            private_key=result["key"],
+            created_by=current_user.id,
+            expires_at=expires_at
+        )
+        
+        db.add(db_cert)
+        db.commit()
+        db.refresh(db_cert)
+        
+        # Log action
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action="certificate_create_ca",
+            resource_type="certificate",
+            resource_id=str(db_cert.id),
+            resource_name=db_cert.name,
+            details=f"Created CA certificate with {cert_data.duration_hours} hours duration",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        return {
+            "certificate": db_cert,
+            "public_key": result["cert"],
+            "private_key": result["key"]
+        }
+    
+    except Exception as e:
+        db.rollback()
+        
+        # Log failed action
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action="certificate_create_ca",
+            resource_type="certificate",
+            resource_name=cert_data.name,
+            status="failed",
+            error_message=str(e),
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create CA: {str(e)}"
+        )
+
+
+@router.post("/sign", response_model=CertificateWithKeys, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+async def sign_certificate(
+    request: Request,
+    cert_data: CertificateCreate,
+    ca_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Sign certificate with rate limiting and validation."""
+    if not cert_data.ip_address:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="IP address is required"
+        )
+    
+    existing = db.query(Certificate).filter(Certificate.name == cert_data.name).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Certificate with this name already exists"
+        )
+    
+    ca_cert = db.query(Certificate).filter(
+        Certificate.id == ca_id,
+        Certificate.is_ca == True
+    ).first()
+    
+    if not ca_cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="CA certificate not found"
+        )
+    
+    try:
+        ca_files = cert_manager.save_certificate_files(
+            f"ca_{ca_cert.id}",
+            ca_cert.public_key,
+            ca_cert.private_key
+        )
+        
+        result = cert_manager.sign_certificate(
+            name=cert_data.name,
+            ip=cert_data.ip_address,
+            ca_cert_path=ca_files["cert_path"],
+            ca_key_path=ca_files["key_path"],
+            groups=cert_data.groups,
+            duration_hours=cert_data.duration_hours
+        )
+        
+        expires_at = datetime.utcnow() + timedelta(hours=cert_data.duration_hours)
+        groups_json = json.dumps(cert_data.groups) if cert_data.groups else None
+        
+        db_cert = Certificate(
+            name=cert_data.name,
+            cert_type=cert_data.cert_type,
+            ip_address=cert_data.ip_address,
+            groups=groups_json,
+            is_ca=False,
+            duration_hours=cert_data.duration_hours,
+            public_key=result["cert"],
+            private_key=result["key"],
+            created_by=current_user.id,
+            expires_at=expires_at
+        )
+        
+        db.add(db_cert)
+        db.commit()
+        db.refresh(db_cert)
+        
+        # Log action
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action="certificate_sign",
+            resource_type="certificate",
+            resource_id=str(db_cert.id),
+            resource_name=db_cert.name,
+            details=f"Signed certificate for IP {cert_data.ip_address}",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        return {
+            "certificate": db_cert,
+            "public_key": result["cert"],
+            "private_key": result["key"]
+        }
+    
+    except Exception as e:
+        db.rollback()
+        
+        # Log failed action
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action="certificate_sign",
+            resource_type="certificate",
+            resource_name=cert_data.name,
+            status="failed",
+            error_message=str(e),
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sign certificate: {str(e)}"
+        )
+
+
+@router.get("/", response_model=List[CertificateResponse])
+@limiter.limit("30/minute")
+async def list_certificates(
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """List all certificates with rate limiting."""
+    certificates = db.query(Certificate).offset(skip).limit(limit).all()
+    return certificates
+
+
+@router.get("/ca/list", response_model=List[CertificateResponse])
+@limiter.limit("30/minute")
+async def list_ca_certificates(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """List all CA certificates."""
+    cas = db.query(Certificate).filter(Certificate.is_ca == True).all()
+    return cas
+
+
+@router.get("/{cert_id}", response_model=CertificateResponse)
+@limiter.limit("30/minute")
+async def get_certificate(
+    request: Request,
+    cert_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get specific certificate."""
+    cert = db.query(Certificate).filter(Certificate.id == cert_id).first()
+    
+    if not cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate not found"
+        )
+    
+    return cert
+
+
+@router.get("/{cert_id}/download")
+@limiter.limit("20/minute")
+async def download_certificate(
+    request: Request,
+    cert_id: int,
+    include_key: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Download certificate files."""
+    cert = db.query(Certificate).filter(Certificate.id == cert_id).first()
+    
+    if not cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate not found"
+        )
+    
+    # Log download action
+    log_action(
+        db=db,
+        user_id=current_user.id,
+        action="certificate_download",
+        resource_type="certificate",
+        resource_id=str(cert.id),
+        resource_name=cert.name,
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    result = {
+        "name": cert.name,
+        "certificate": cert.public_key
+    }
+    
+    if include_key and cert.private_key:
+        result["private_key"] = cert.private_key
+    
+    return JSONResponse(content=result)
+
+
+@router.delete("/{cert_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("10/minute")
+async def revoke_certificate(
+    request: Request,
+    cert_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Revoke certificate."""
+    cert = db.query(Certificate).filter(Certificate.id == cert_id).first()
+    
+    if not cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate not found"
+        )
+    
+    cert.revoked = True
+    cert.revoked_at = datetime.utcnow()
+    
+    db.commit()
+    
+    # Log action
+    log_action(
+        db=db,
+        user_id=current_user.id,
+        action="certificate_revoke",
+        resource_type="certificate",
+        resource_id=str(cert.id),
+        resource_name=cert.name,
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return None

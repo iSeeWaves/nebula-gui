@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula GUI API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .links {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .link-card {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .link-card:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+            border-color: #667eea;
+        }
+        
+        .link-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+        
+        .link-text {
+            flex: 1;
+        }
+        
+        .link-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .link-desc {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Nebula GUI API</h1>
+        <p class="subtitle">Backend API for managing Nebula VPN networks</p>
+        
+        <div class="status">
+            <div class="status-dot"></div>
+            <span><strong>Status:</strong> API is running</span>
+        </div>
+        
+        <div class="links">
+            <a href="/docs" class="link-card">
+                <div class="link-icon">📚</div>
+                <div class="link-text">
+                    <div class="link-title">API Documentation</div>
+                    <div class="link-desc">Interactive Swagger UI documentation</div>
+                </div>
+            </a>
+            
+            <a href="/redoc" class="link-card">
+                <div class="link-icon">📖</div>
+                <div class="link-text">
+                    <div class="link-title">ReDoc Documentation</div>
+                    <div class="link-desc">Alternative documentation view</div>
+                </div>
+            </a>
+            
+            <a href="/api/monitoring/health" class="link-card">
+                <div class="link-icon">💚</div>
+                <div class="link-text">
+                    <div class="link-title">Health Check</div>
+                    <div class="link-desc">Check API health status</div>
+                </div>
+            </a>
+            
+            <a href="/api/monitoring/system" class="link-card">
+                <div class="link-icon">📊</div>
+                <div class="link-text">
+                    <div class="link-title">System Stats</div>
+                    <div class="link-desc">View system metrics (requires auth)</div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>Nebula GUI API v1.0.0</p>
+            <p>Default credentials: admin / Admin123!</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,122 @@
+"""Database configuration and models with enhanced logging."""
+import os
+from datetime import datetime
+from typing import Generator
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, Text, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session, relationship
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./nebula_gui.db")
+
+engine = create_engine(
+    DATABASE_URL, 
+    pool_pre_ping=True, 
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {} 
+)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+class User(Base):
+    """User model with role-based access control."""
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), default="user", nullable=False)
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+    
+    certificates = relationship("Certificate", foreign_keys="[Certificate.created_by]", back_populates="created_by_user")
+    audit_logs = relationship("AuditLog", foreign_keys="[AuditLog.user_id]", back_populates="user")
+
+
+class Certificate(Base):
+    """Certificate model."""
+    __tablename__ = "certificates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True, index=True)
+    cert_type = Column(String(20), nullable=False)
+    ip_address = Column(String(50), nullable=True)
+    groups = Column(Text, nullable=True)
+    is_ca = Column(Boolean, default=False)
+    duration_hours = Column(Integer, default=8760)
+    public_key = Column(Text, nullable=False)
+    private_key = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    revoked = Column(Boolean, default=False)
+    revoked_at = Column(DateTime, nullable=True)
+    
+    created_by_user = relationship("User", foreign_keys=[created_by], back_populates="certificates")
+
+
+class NebulaConfig(Base):
+    """Nebula configuration storage."""
+    __tablename__ = "nebula_configs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True, index=True)
+    config_data = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class NebulaProcess(Base):
+    """Track running Nebula processes."""
+    __tablename__ = "nebula_processes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    pid = Column(Integer, nullable=False, unique=True)
+    config_name = Column(String(100), nullable=False)
+    started_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    started_at = Column(DateTime, default=datetime.utcnow)
+    stopped_at = Column(DateTime, nullable=True)
+    status = Column(String(20), default="running")
+
+
+class AuditLog(Base):
+    """Enhanced audit log for tracking all actions."""
+    __tablename__ = "audit_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(50), nullable=False)
+    resource_type = Column(String(50), nullable=False)
+    resource_id = Column(String(100), nullable=True)
+    resource_name = Column(String(200), nullable=True)
+    details = Column(Text, nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(String(500), nullable=True)
+    status = Column(String(20), default="success")
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", foreign_keys=[user_id], back_populates="audit_logs")
+
+
+def init_db():
+    """Initialize database tables."""
+    Base.metadata.create_all(bind=engine)
+
+
+def get_db() -> Generator[Session, None, None]:
+    """Dependency for getting database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

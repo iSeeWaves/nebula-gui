@@ -1,0 +1,107 @@
+"""Main FastAPI application with rate limiting and security."""
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from core.database import init_db, SessionLocal, User
+from core.security import get_password_hash
+from api import auth, certificates, config, process, monitoring, audit, users
+from api.middleware import limiter
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle manager."""
+    print("Initializing database...")
+    init_db()
+    
+    db = SessionLocal()
+    try:
+        user_count = db.query(User).count()
+        if user_count == 0:
+            print("Creating default admin user...")
+            admin_user = User(
+                username="admin",
+                email="admin@nebula.local",
+                hashed_password=get_password_hash("Admin123!"),
+                role="admin",
+                is_admin=True,
+                is_active=True
+            )
+            db.add(admin_user)
+            db.commit()
+            print("Default admin user created: username='admin', password='Admin123!'")
+            print("⚠️  PLEASE CHANGE THE DEFAULT PASSWORD IMMEDIATELY!")
+    finally:
+        db.close()
+    
+    yield
+    
+    print("Shutting down...")
+
+
+app = FastAPI(
+    title="Nebula GUI API",
+    description="API for managing Nebula VPN",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Add rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS with stricter settings
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+    max_age=3600,
+)
+
+# Include routers
+app.include_router(auth.router, prefix="/api")
+app.include_router(certificates.router, prefix="/api")
+app.include_router(config.router, prefix="/api")
+app.include_router(process.router, prefix="/api")
+app.include_router(monitoring.router, prefix="/api")
+app.include_router(audit.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
+
+# Mount static files
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.get("/")
+@limiter.limit("10/minute")
+async def root(request: Request):
+    """Root endpoint with rate limiting."""
+    return {
+        "message": "Nebula GUI API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
+
+
+@app.get("/api/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
