@@ -31,3 +31,37 @@ psutil==5.9.8
 
 # Development
 python-dotenv==1.0.0
+
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Database
+sqlalchemy==2.0.23
+
+# Security & Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+pydantic[email]==2.5.0
+email-validator==2.1.0
+
+# Encryption
+cryptography==41.0.7
+pycryptodome==3.19.0
+
+# Rate Limiting & Security Headers
+slowapi==0.1.9
+python-dotenv==1.0.0
+
+# HTTPS/SSL
+pyOpenSSL==23.3.0
+
+# Monitoring
+psutil==5.9.6
+
+# Password strength validation
+zxcvbn==4.4.28
+
+# Security headers
+secure==0.3.0

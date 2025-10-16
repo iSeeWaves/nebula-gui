@@ -1,7 +1,7 @@
-"""Database configuration and models with enhanced logging."""
+"""Database configuration and models with enhanced logging and encryption."""
 import os
 from datetime import datetime
-from typing import Generator
+from typing import Generator, Optional
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
@@ -36,12 +36,36 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
     
+    # Security fields for future 2FA support
+    two_factor_enabled = Column(Boolean, default=False)
+    two_factor_secret = Column(String(255), nullable=True)  # Encrypted
+    
     certificates = relationship("Certificate", foreign_keys="[Certificate.created_by]", back_populates="created_by_user")
     audit_logs = relationship("AuditLog", foreign_keys="[AuditLog.user_id]", back_populates="user")
+    
+    def set_2fa_secret(self, secret: str):
+        """Set encrypted 2FA secret."""
+        from core.config import settings
+        if secret and settings.ENCRYPTION_KEY:
+            from core.encryption import encrypt_data
+            self.two_factor_secret = encrypt_data(secret)
+        else:
+            self.two_factor_secret = secret
+    
+    def get_2fa_secret(self) -> Optional[str]:
+        """Get decrypted 2FA secret."""
+        from core.config import settings
+        if self.two_factor_secret and settings.ENCRYPTION_KEY:
+            try:
+                from core.encryption import decrypt_data
+                return decrypt_data(self.two_factor_secret)
+            except:
+                return None
+        return self.two_factor_secret
 
 
 class Certificate(Base):
-    """Certificate model."""
+    """Certificate model with optional encryption for private keys."""
     __tablename__ = "certificates"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -52,7 +76,11 @@ class Certificate(Base):
     is_ca = Column(Boolean, default=False)
     duration_hours = Column(Integer, default=8760)
     public_key = Column(Text, nullable=False)
-    private_key = Column(Text, nullable=True)
+    
+    # Private key - can be encrypted if ENCRYPT_PRIVATE_KEYS is enabled
+    _private_key = Column("private_key", Text, nullable=True)
+    _is_encrypted = Column("is_encrypted", Boolean, default=False)
+    
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=False)
@@ -60,19 +88,91 @@ class Certificate(Base):
     revoked_at = Column(DateTime, nullable=True)
     
     created_by_user = relationship("User", foreign_keys=[created_by], back_populates="certificates")
+    
+    @property
+    def private_key(self) -> Optional[str]:
+        """Get private key (decrypt if needed)."""
+        if not self._private_key:
+            return None
+        
+        from core.config import settings
+        
+        # If encryption is enabled and key is marked as encrypted
+        if self._is_encrypted and settings.ENCRYPTION_KEY:
+            try:
+                from core.encryption import decrypt_data
+                return decrypt_data(self._private_key)
+            except Exception as e:
+                print(f"Error decrypting private key for {self.name}: {e}")
+                return self._private_key
+        
+        return self._private_key
+    
+    @private_key.setter
+    def private_key(self, value: Optional[str]):
+        """Set private key (encrypt if enabled)."""
+        if not value:
+            self._private_key = None
+            self._is_encrypted = False
+            return
+        
+        from core.config import settings
+        
+        # Encrypt if enabled
+        if settings.ENCRYPT_PRIVATE_KEYS and settings.ENCRYPTION_KEY:
+            try:
+                from core.encryption import encrypt_data
+                self._private_key = encrypt_data(value)
+                self._is_encrypted = True
+            except Exception as e:
+                print(f"Error encrypting private key: {e}")
+                self._private_key = value
+                self._is_encrypted = False
+        else:
+            self._private_key = value
+            self._is_encrypted = False
 
 
 class NebulaConfig(Base):
-    """Nebula configuration storage."""
+    """Nebula configuration storage with optional encryption."""
     __tablename__ = "nebula_configs"
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
-    config_data = Column(Text, nullable=False)
+    
+    # Config data - can be encrypted if it contains sensitive info
+    _config_data = Column("config_data", Text, nullable=False)
+    _is_encrypted = Column("config_encrypted", Boolean, default=False)
+    
     is_active = Column(Boolean, default=False)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @property
+    def config_data(self) -> str:
+        """Get config data (decrypt if needed)."""
+        from core.config import settings
+        
+        if self._is_encrypted and settings.ENCRYPTION_KEY:
+            try:
+                from core.encryption import decrypt_data
+                return decrypt_data(self._config_data)
+            except Exception as e:
+                print(f"Error decrypting config {self.name}: {e}")
+                return self._config_data
+        
+        return self._config_data
+    
+    @config_data.setter
+    def config_data(self, value: str):
+        """Set config data (optionally encrypt)."""
+        from core.config import settings
+        
+        # For now, we don't auto-encrypt configs by default
+        # You can enable this if you want to encrypt all configs
+        self._config_data = value
+        self._is_encrypted = False
 
 
 class NebulaProcess(Base):
@@ -108,9 +208,25 @@ class AuditLog(Base):
     user = relationship("User", foreign_keys=[user_id], back_populates="audit_logs")
 
 
+class SessionToken(Base):
+    """Session token model for better session management."""
+    __tablename__ = "session_tokens"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String(255), unique=True, index=True, nullable=False)
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    revoked = Column(Boolean, default=False)
+    last_activity = Column(DateTime, default=datetime.utcnow)
+
+
 def init_db():
     """Initialize database tables."""
     Base.metadata.create_all(bind=engine)
+    print("✅ Database tables created/verified")
 
 
 def get_db() -> Generator[Session, None, None]:
