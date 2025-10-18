@@ -11,6 +11,7 @@ import MonitoringPage from './pages/monitoring/MonitoringPage';
 import AuditLogsPage from './pages/audit/AuditLogsPage';
 import UsersPage from './pages/users/UsersPage';
 import ProfilePage from './pages/profile/ProfilePage';
+import ClientSetupPage from './pages/ClientSetupPage';
 
 function App() {
   return (
@@ -73,6 +74,18 @@ function App() {
             }
           />
           
+          {/* Client Setup Route - NEW */}
+          <Route
+            path="/client-setup"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ClientSetupPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
           {/* Admin-Only Routes */}
           <Route
             path="/users"
@@ -95,10 +108,8 @@ function App() {
             }
           />
           
-          {/* Default redirect */}
+          {/* Default Redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          
-          {/* 404 catch-all */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>

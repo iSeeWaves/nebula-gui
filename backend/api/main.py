@@ -19,6 +19,7 @@ from core.middleware import (
 )
 from api import auth, certificates, config, process, monitoring, audit, users
 from api.middleware import limiter
+from api import client_setup
 
 
 @asynccontextmanager
@@ -135,6 +136,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # API routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(client_setup.router, prefix="/api")
 app.include_router(certificates.router, prefix="/api")
 app.include_router(config.router, prefix="/api")
 app.include_router(process.router, prefix="/api")

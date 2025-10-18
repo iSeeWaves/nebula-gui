@@ -14,12 +14,13 @@ export default function Layout({ children }) {
   };
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/certificates', label: 'Certificates', icon: '🔐' },
-    { path: '/configs', label: 'Configurations', icon: '⚙️' },
-    { path: '/monitoring', label: 'Monitoring', icon: '📈' },
-    { path: '/users', label: 'Users', icon: '👥', adminOnly: true },
-    { path: '/audit', label: 'Audit Logs', icon: '📋', adminOnly: true },
+    { path: '/dashboard', label: 'Dashboard', icon: '' },
+    { path: '/certificates', label: 'Certificates', icon: '' },
+    { path: '/client-setup', label: 'Client Setup', icon: '' }, // NEW!
+    { path: '/configs', label: 'Configurations', icon: '' },
+    { path: '/monitoring', label: 'Monitoring', icon: '' },
+    { path: '/users', label: 'Users', icon: '', adminOnly: true },
+    { path: '/audit', label: 'Audit Logs', icon: '', adminOnly: true },
   ];
 
   // Filter nav items based on user role
@@ -136,7 +137,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-4 sm:py-6 px-2 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>
