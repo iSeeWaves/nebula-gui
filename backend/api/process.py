@@ -15,7 +15,7 @@ router = APIRouter(prefix="/process", tags=["process"])
 
 # Use local directory for testing if /etc/nebula is not writable
 config_dir = os.path.expanduser("~/.nebula-gui/configs") if not os.access("/etc/nebula", os.W_OK) else "/etc/nebula"
-nebula_manager = NebulaManager(config_dir=config_dir)
+nebula_manager = NebulaManager()
 
 
 class ProcessStart(BaseModel):
