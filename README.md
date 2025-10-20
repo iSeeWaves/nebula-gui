@@ -63,26 +63,6 @@ A modern, intuitive web interface for managing [Nebula VPN](https://github.com/s
 
 ---
 
-## 🎥 Demo
-
-![Nebula GUI Demo](docs/images/demo.gif)
-
-### Screenshots
-
-<div align="center">
-
-| Dashboard | Certificate Management |
-|:---------:|:---------------------:|
-| ![Dashboard](docs/images/dashboard.png) | ![Certificates](docs/images/certificates.png) |
-
-| One-Click Setup | Mobile Connection |
-|:---------------:|:-----------------:|
-| ![Client Setup](docs/images/client-setup.png) | ![Mobile](docs/images/mobile.png) |
-
-</div>
-
----
-
 ## ⚡ Quick Start
 
 ### Prerequisites
@@ -231,7 +211,7 @@ Nebula GUI takes security seriously:
 6. Regular security audits
 
 **Reporting Security Issues:**  
-Please report security vulnerabilities to: security@iseewaves.com
+Please report security vulnerabilities to: iseewaves.pk@gmail.com
 
 ---
 
@@ -332,8 +312,8 @@ https://github.com/iSeeWaves
 ### Contact
 
 For licensing inquiries, commercial use, or permissions:
-- **Email**: legal@iseewaves.com
-- **Website**: https://iseewaves.com
+- **Email**: iseewaves.pk@gmail.com
+- **Website**: linkedin.com/company/iseewaves
 - **GitHub**: https://github.com/iSeeWaves
 
 ---
@@ -343,7 +323,7 @@ For licensing inquiries, commercial use, or permissions:
 - [Nebula](https://github.com/slackhq/nebula) - The amazing overlay network project by Slack
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern, fast web framework
 - [React](https://react.dev/) - UI library
-- Frontend Developer: [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
+- Developer: [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
 - All our [contributors](https://github.com/iSeeWaves/nebula-gui/graphs/contributors)
 
 ---
@@ -352,15 +332,15 @@ For licensing inquiries, commercial use, or permissions:
 
 **Company:** [iSeeWaves (Private) Limited](https://github.com/iSeeWaves)
 
-**Lead Frontend Developer:** [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
+**Lead Developer:** [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
 
 ---
 
 ## 💬 Community
 
-- **Website**: [iseewaves.com](https://iseewaves.com)
+- **Website**: [iseewaves.com](https://www.linkedin.com/company/iseewaves)
 - **GitHub**: [github.com/iSeeWaves](https://github.com/iSeeWaves)
-- **Email**: support@iseewaves.com
+- **Email**: iseewaves.pk@gmail.com
 - **Issues**: [Report Issues](https://github.com/iSeeWaves/nebula-gui/issues)
 
 ---
@@ -369,15 +349,6 @@ For licensing inquiries, commercial use, or permissions:
 
 [![Star History Chart](https://api.star-history.com/svg?repos=iSeeWaves/nebula-gui&type=Date)](https://star-history.com/#iSeeWaves/nebula-gui&Date)
 
----
-
-## 📈 Stats
-
-![GitHub Stars](https://img.shields.io/github/stars/iSeeWaves/nebula-gui?style=social)
-![GitHub Forks](https://img.shields.io/github/forks/iSeeWaves/nebula-gui?style=social)
-![GitHub Issues](https://img.shields.io/github/issues/iSeeWaves/nebula-gui)
-![GitHub Pull Requests](https://img.shields.io/github/issues-pr/iSeeWaves/nebula-gui)
-![GitHub Contributors](https://img.shields.io/github/contributors/iSeeWaves/nebula-gui)
 
 ---
 
