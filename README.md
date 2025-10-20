@@ -345,13 +345,6 @@ For licensing inquiries, commercial use, or permissions:
 
 ---
 
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=iSeeWaves/nebula-gui&type=Date)](https://star-history.com/#iSeeWaves/nebula-gui&Date)
-
-
----
-
 <div align="center">
 
 **Developed with ❤️ by iSeeWaves (Private) Limited**
