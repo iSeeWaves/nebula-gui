@@ -1,150 +1,396 @@
-# Nebula VPN Management GUI
+# 🚀 Nebula GUI
 
-A modern web-based management interface for Nebula VPN with role-based access control, audit logging, and comprehensive certificate management.
+<div align="center">
 
-## Features
+![Nebula GUI](https://img.shields.io/badge/Nebula-GUI-blue?style=for-the-badge&logo=nebula)
+![Version](https://img.shields.io/badge/version-1.0.0-green?style=for-the-badge)
+![License](https://img.shields.io/badge/license-Proprietary-orange?style=for-the-badge)
 
-### 🔐 Authentication & Security
-- JWT-based authentication
-- Role-Based Access Control (RBAC)
-  - Admin: Full access
-  - User: Manage own resources
-  - Viewer: Read-only access
-- Password strength validation
-- Session management
+**Enterprise VPN Management Made Simple**
 
-### 📜 Certificate Management
-- Create Certificate Authority (CA)
-- Sign host certificates
-- Revoke certificates
-- Download certificates and keys
-- View certificate details and expiration
+A modern, intuitive web interface for managing [Nebula VPN](https://github.com/slackhq/nebula) mesh networks.
 
-### ⚙️ Configuration Management
-- Create and manage Nebula configurations
-- YAML editor with validation
-- Activate/deactivate configurations
-- Download configuration files
+**Developed by [iSeeWaves (Private) Limited](https://github.com/iSeeWaves)**
 
-### 👥 User Management (Admin Only)
-- Create and manage users
-- Assign roles and permissions
-- Activate/deactivate accounts
-- View user statistics
+[Features](#-features) • [Demo](#-demo) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
 
-### 📊 Monitoring
-- Real-time system metrics (CPU, Memory, Disk)
-- Network statistics
-- Custom refresh intervals
+</div>
 
-### 📋 Audit Logging
-- Track all user actions
-- Filter by action, resource, status
-- View login history
-- Admin activity monitoring
+---
 
-## Tech Stack
+## 🌟 Features
 
-### Backend
-- **Framework:** FastAPI (Python)
-- **Database:** SQLite with SQLAlchemy ORM
-- **Authentication:** JWT tokens with OAuth2
-- **Security:** Bcrypt password hashing, RBAC
-- **Certificate Management:** Nebula-cert CLI integration
+### 🔐 **Certificate Management**
+- ✅ Create Certificate Authorities with one click
+- ✅ Sign host certificates instantly
+- ✅ Automatic IP address assignment
+- ✅ Certificate lifecycle tracking
+- ✅ Bulk certificate operations
 
-### Frontend
-- **Framework:** React 18 with Vite
-- **Routing:** React Router v6
-- **Styling:** Tailwind CSS
-- **HTTP Client:** Axios
-- **State Management:** React Context API
+### 🚀 **One-Click Client Setup** (NEW!)
+- ✅ Generate pre-configured client packages
+- ✅ QR code provisioning for mobile devices
+- ✅ Complete installation scripts included
+- ✅ Zero manual configuration required
+- ✅ Support for Linux, macOS, Windows, iOS, Android
 
-## Installation
+### 👥 **User Management**
+- ✅ Role-based access control (Admin/User)
+- ✅ Multi-user support
+- ✅ Activity tracking
+- ✅ Profile management
+
+### 📊 **Monitoring & Analytics**
+- ✅ Real-time system metrics
+- ✅ Network statistics
+- ✅ Certificate expiration alerts
+- ✅ Process management
+
+### 🔒 **Enterprise Security**
+- ✅ JWT authentication
+- ✅ Encrypted private keys (AES-256)
+- ✅ Comprehensive audit logging
+- ✅ Rate limiting & DDoS protection
+- ✅ Security headers (HSTS, CSP, etc.)
+- ✅ Session management
+- ✅ Account lockout after failed attempts
+
+### 🎨 **Modern UI/UX**
+- ✅ Responsive design (mobile-friendly)
+- ✅ Dark mode ready
+- ✅ Intuitive navigation
+- ✅ Real-time updates
+
+---
+
+## 🎥 Demo
+
+![Nebula GUI Demo](docs/images/demo.gif)
+
+### Screenshots
+
+<div align="center">
+
+| Dashboard | Certificate Management |
+|:---------:|:---------------------:|
+| ![Dashboard](docs/images/dashboard.png) | ![Certificates](docs/images/certificates.png) |
+
+| One-Click Setup | Mobile Connection |
+|:---------------:|:-----------------:|
+| ![Client Setup](docs/images/client-setup.png) | ![Mobile](docs/images/mobile.png) |
+
+</div>
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- npm or yarn
-- nebula-cert binary
 
-### Backend Setup
+- Python 3.11+
+- Node.js 18+
+- Nebula binaries ([Download](https://github.com/slackhq/nebula/releases))
+
+### Installation
 ```bash
+# Clone the repository
+git clone https://github.com/iSeeWaves/nebula-gui.git
+cd nebula-gui
+
+# Backend setup
 cd backend
-
-# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate
 pip install -r requirements.txt
 
-# Run the server
+# Generate security keys
+python3 -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))" > .env
+python3 -c "from cryptography.fernet import Fernet; print('ENCRYPTION_KEY=' + Fernet.generate_key().decode())" >> .env
+
+# Start backend
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-```
 
-### Frontend Setup
-```bash
+# Frontend setup (in new terminal)
 cd frontend
-
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
 ```
 
-## Default Credentials
+### First Login
 
-- **Username:** `admin`
-- **Password:** `Admin123!`
+- URL: `http://localhost:5173`
+- Username: `admin`
+- Password: `Admin123!`
 
-⚠️ **Change the default password immediately after first login!**
+⚠️ **Change the default password immediately!**
 
-## API Documentation
+---
 
-Once the backend is running, visit:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+## 📖 Documentation
 
-## Project Structure
+### User Guide
+
+1. **[Installation Guide](docs/INSTALLATION.md)** - Detailed setup instructions
+2. **[User Manual](docs/USER_GUIDE.md)** - How to use Nebula GUI
+3. **[API Documentation](docs/API.md)** - REST API reference
+4. **[Configuration](docs/CONFIGURATION.md)** - Advanced configuration options
+
+### For Developers
+
+1. **[Development Setup](docs/DEVELOPMENT.md)** - Setting up dev environment
+2. **[Architecture](docs/ARCHITECTURE.md)** - System design and components
+3. **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+4. **[API Integration](docs/API_INTEGRATION.md)** - Integrate with other systems
+
+---
+
+## 🏗️ Architecture
 ```
-nebula-gui/
-├── backend/
-│   ├── api/              # API endpoints
-│   ├── core/             # Core functionality
-│   ├── requirements.txt  # Python dependencies
-│   └── nebula_gui.db    # SQLite database
-├── frontend/
-│   ├── src/
-│   │   ├── components/  # React components
-│   │   ├── pages/       # Page components
-│   │   ├── context/     # Context providers
-│   │   └── services/    # API services
-│   ├── package.json     # Node dependencies
-│   └── vite.config.js   # Vite configuration
-└── README.md
+┌─────────────────────────────────────────────────┐
+│                  Frontend (React)               │
+│  ┌──────────┬──────────┬──────────┬──────────┐ │
+│  │Dashboard │  Certs   │  Setup   │ Monitor  │ │
+│  └──────────┴──────────┴──────────┴──────────┘ │
+└─────────────────────────────────────────────────┘
+                       │ HTTP/REST
+┌─────────────────────────────────────────────────┐
+│              Backend (FastAPI)                  │
+│  ┌──────────┬──────────┬──────────┬──────────┐ │
+│  │   Auth   │   API    │ Business │  Queue   │ │
+│  └──────────┴──────────┴──────────┴──────────┘ │
+└─────────────────────────────────────────────────┘
+                       │
+┌─────────────────────────────────────────────────┐
+│            Core Services                        │
+│  ┌──────────┬──────────┬──────────┬──────────┐ │
+│  │ Nebula   │  Crypto  │   DB     │  Logger  │ │
+│  └──────────┴──────────┴──────────┴──────────┘ │
+└─────────────────────────────────────────────────┘
 ```
 
-## Security Notes
+### Tech Stack
 
-- All passwords are hashed using bcrypt
-- JWT tokens expire after 7 days
-- Admin endpoints are protected by RBAC
-- Audit logging tracks all sensitive operations
-- Certificate private keys are stored securely
+**Frontend:**
+- React 18
+- Vite
+- Tailwind CSS
+- React Router
+- Axios
 
-## Contributing
+**Backend:**
+- FastAPI
+- SQLAlchemy
+- Pydantic
+- Python-Jose (JWT)
+- Cryptography
 
-This is a private repository. If you have access and want to contribute:
+**Database:**
+- SQLite (default)
+- PostgreSQL (production ready)
 
-1. Create a feature branch
-2. Make your changes
-3. Submit a pull request
+---
 
-## License
+## 🚀 Deployment
 
-Private/Proprietary - All rights reserved
+### Docker Deployment
+```bash
+# Using Docker Compose
+docker-compose up -d
+```
 
-## Author
+### Manual Deployment
 
-Your Name - Final Year Project 2024/2025
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed production deployment guide.
+
+### Cloud Deployment
+
+- [DigitalOcean Guide](docs/deploy/DIGITALOCEAN.md)
+- [AWS Guide](docs/deploy/AWS.md)
+- [Google Cloud Guide](docs/deploy/GCP.md)
+
+---
+
+## 🔒 Security
+
+Nebula GUI takes security seriously:
+
+- 🔐 **Encrypted Storage**: Private keys encrypted at rest (AES-256 Fernet)
+- 🛡️ **Authentication**: JWT with configurable expiration
+- 📋 **Audit Logging**: Complete audit trail of all actions
+- 🚫 **Rate Limiting**: Protection against brute force and DDoS
+- 🔒 **Security Headers**: HSTS, CSP, X-Frame-Options, etc.
+- 🔑 **RBAC**: Role-based access control
+- 🚪 **Session Management**: Secure session handling with lockout
+
+**Security Best Practices:**
+1. Change default admin password immediately
+2. Use strong passwords (8+ chars, mixed case, numbers, special chars)
+3. Enable 2FA (coming soon)
+4. Keep software updated
+5. Use HTTPS in production
+6. Regular security audits
+
+**Reporting Security Issues:**  
+Please report security vulnerabilities to: security@iseewaves.com
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow PEP 8 for Python code
+- Use ESLint/Prettier for JavaScript
+- Write tests for new features
+- Update documentation
+- Keep commits atomic and meaningful
+
+---
+
+## 🗺️ Roadmap
+
+### Version 1.1 (Q1 2026)
+- [ ] Desktop system tray applications (Windows, macOS, Linux)
+- [ ] Two-factor authentication (2FA)
+- [ ] Certificate auto-renewal
+- [ ] Bulk operations
+
+### Version 1.2 (Q2 2026)
+- [ ] Mobile apps (native iOS/Android)
+- [ ] Smart split tunneling
+- [ ] Network templates
+- [ ] Advanced firewall rules
+
+### Version 2.0 (Q3 2026)
+- [ ] Multi-tenancy support
+- [ ] LDAP/Active Directory integration
+- [ ] Advanced analytics & reporting
+- [ ] API v2 with webhooks
+
+See [ROADMAP.md](docs/ROADMAP.md) for detailed plans.
+
+---
+
+## 📊 Comparison
+
+| Feature | Nebula GUI | Tailscale | ZeroTier | WireGuard UI |
+|---------|-----------|-----------|----------|--------------|
+| **Self-Hosted** | ✅ | ❌ | ❌ | ✅ |
+| **One-Click Setup** | ✅ | ✅ | ⚠️ | ❌ |
+| **Web Interface** | ✅ | ✅ | ✅ | ✅ |
+| **Mobile Apps** | ✅ | ✅ | ✅ | ⚠️ |
+| **Audit Logging** | ✅ | ✅ | ⚠️ | ❌ |
+| **Multi-User** | ✅ | ✅ | ✅ | ⚠️ |
+| **RBAC** | ✅ | ✅ | ⚠️ | ❌ |
+| **Open Source** | ✅ | ❌ | ❌ | ✅ |
+| **Price (10 devices)** | **Free** | $60/mo | $29/mo | Free |
+
+---
+
+## 📄 License
+
+**Proprietary License**
+
+Copyright © 2025 **iSeeWaves (Private) Limited**. All rights reserved.
+
+This software and associated documentation files (the "Software") are the proprietary property of iSeeWaves (Private) Limited.
+
+### Terms of Use
+
+**PERMISSION IS GRANTED** to any person obtaining a copy of this Software to:
+- ✅ Use the Software for personal, educational, or commercial purposes
+- ✅ Copy and distribute the Software in its original form
+- ✅ Modify the Software for personal or internal business use
+
+**RESTRICTIONS:**
+- ❌ The Software may NOT be sold, sublicensed, or redistributed for profit without explicit written permission from iSeeWaves (Private) Limited
+- ❌ Modified versions of the Software may NOT be distributed publicly without proper attribution and acknowledgment of iSeeWaves (Private) Limited as the original author
+- ❌ The Software's name, logo, and branding may NOT be used to endorse or promote derivative products without written permission
+
+### Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL iSeeWaves (Private) Limited BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### Attribution
+
+All copies or substantial portions of the Software must retain the following copyright notice:
+```
+Copyright © 2025 iSeeWaves (Private) Limited
+https://github.com/iSeeWaves
+```
+
+### Contact
+
+For licensing inquiries, commercial use, or permissions:
+- **Email**: legal@iseewaves.com
+- **Website**: https://iseewaves.com
+- **GitHub**: https://github.com/iSeeWaves
+
+---
+
+## 🙏 Acknowledgments
+
+- [Nebula](https://github.com/slackhq/nebula) - The amazing overlay network project by Slack
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern, fast web framework
+- [React](https://react.dev/) - UI library
+- Frontend Developer: [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
+- All our [contributors](https://github.com/iSeeWaves/nebula-gui/graphs/contributors)
+
+---
+
+## 👨‍💻 Development Team
+
+**Company:** [iSeeWaves (Private) Limited](https://github.com/iSeeWaves)
+
+**Lead Frontend Developer:** [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
+
+---
+
+## 💬 Community
+
+- **Website**: [iseewaves.com](https://iseewaves.com)
+- **GitHub**: [github.com/iSeeWaves](https://github.com/iSeeWaves)
+- **Email**: support@iseewaves.com
+- **Issues**: [Report Issues](https://github.com/iSeeWaves/nebula-gui/issues)
+
+---
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=iSeeWaves/nebula-gui&type=Date)](https://star-history.com/#iSeeWaves/nebula-gui&Date)
+
+---
+
+## 📈 Stats
+
+![GitHub Stars](https://img.shields.io/github/stars/iSeeWaves/nebula-gui?style=social)
+![GitHub Forks](https://img.shields.io/github/forks/iSeeWaves/nebula-gui?style=social)
+![GitHub Issues](https://img.shields.io/github/issues/iSeeWaves/nebula-gui)
+![GitHub Pull Requests](https://img.shields.io/github/issues-pr/iSeeWaves/nebula-gui)
+![GitHub Contributors](https://img.shields.io/github/contributors/iSeeWaves/nebula-gui)
+
+---
+
+<div align="center">
+
+**Developed with ❤️ by iSeeWaves (Private) Limited**
+
+**Lead Developer:** [Raja Abdullah Nasir](https://github.com/rajaabdullahnasir)
+
+[Company Profile](https://github.com/iSeeWaves) • [Documentation](https://docs.iseewaves.com) • [Support](mailto:support@iseewaves.com)
+
+---
+
+© 2025 iSeeWaves (Private) Limited. All rights reserved.
+
+</div>
